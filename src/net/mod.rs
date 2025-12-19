@@ -5,6 +5,7 @@ use std::net::{IpAddr, Ipv4Addr};
 use std::{net::SocketAddr, sync::Arc};
 use tokio::sync::mpsc;
 
+use crate::EncryptedPacket;
 use crate::config::{Config, RuntimeConfig};
 
 pub async fn handle_udp_packet(
@@ -68,7 +69,10 @@ pub async fn handle_tun_packet(
                             peer.sock_addr,
                             packet.len()
                         );
-                        if let Err(e) = etx.send((packet.clone(), peer.sock_addr)).await {
+                        if let Err(e) = etx
+                            .send(EncryptedPacket::new(packet.clone(), peer.sock_addr))
+                            .await
+                        {
                             #[cfg(debug_assertions)]
                             eprintln!("Error sending encrypted packet through channel: {e}");
                         }

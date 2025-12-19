@@ -6,6 +6,7 @@ use tokio::{
 };
 use tun::AsyncDevice;
 
+use crate::EncryptedPacket;
 use crate::config::{Config, RuntimeConfig};
 
 // Spawned listeners
@@ -13,7 +14,7 @@ pub async fn tun_listener(
     dev: Arc<AsyncDevice>,
     conf_clone: Arc<Config>,
     runtime_conf: Arc<RuntimeConfig>,
-    etx: Sender<crate::EncryptedPacket>,
+    etx: Sender<EncryptedPacket>,
 ) -> crate::Result<()> {
     let mut tun_buf = [0u8; crate::MTU];
 
@@ -86,18 +87,18 @@ pub async fn result_coordinator(
                    }
 
                    // Receive enccrypted packets from channel and send to UDP
-                   Some((encrypted_packet, peer_addr)) = erx.recv() => {
-                        #[cfg(debug_assertions)]
-                        println!("Sending encrypted packet to peer: {peer_addr}");
-                       match sock.send_to(&encrypted_packet, peer_addr).await {
-                           Ok(sent) => {
-                            #[cfg(debug_assertions)]
-                            println!("Sent {sent} bytes to {peer_addr}");
-                        },
-                           Err(e) => {
-                               eprintln!("Error sending encrypted packet to peer {peer_addr}: {e}");
-                        },
-                       }
+                                       Some(encrypted_packet) = erx.recv() => {
+                                            #[cfg(debug_assertions)]
+                                           println!("Sending encrypted packet to peer: {}", encrypted_packet.destination);
+                                          match sock.send_to(&encrypted_packet.data, encrypted_packet.destination).await {
+                                              Ok(sent) => {
+                                               #[cfg(debug_assertions)]
+                                               println!("Sent {sent} bytes to {}", encrypted_packet.destination);
+                                           },
+                                              Err(e) => {
+                                                  eprintln!("Error sending encrypted packet to peer {}: {}", encrypted_packet.destination, e);
+                                           },
+                                          }
                    }
         }
     }

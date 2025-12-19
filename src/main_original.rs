@@ -1,6 +1,6 @@
 use chacha20poly1305::{ChaCha20Poly1305, KeyInit};
 use opentun::cli::commands::{handle_gen_key, handle_pub_key};
-use opentun::config::{RuntimeConfig, load_config};
+use opentun::config::{load_config, RuntimeConfig};
 use opentun::protocol::PacketProcessor;
 use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr};
@@ -56,27 +56,19 @@ async fn main() -> Result<()> {
 
     // Create a packet processor to demonstrate sans-IO architecture
     let packet_processor = PacketProcessor::new(runtime_config);
-
+    
     // Test the protocol layer with sample data
     let test_packet = create_test_packet();
     match packet_processor.process_tun_packet(&test_packet) {
-        opentun::protocol::ProcessResult::Success(result) => {
-            println!(
-                "Protocol processing test: Success with result: {:?}",
-                result
-            );
+        Ok(result) => {
+            println!("Protocol processing test: {:?}", result);
         }
-        opentun::protocol::ProcessResult::NoAction => {
-            println!("Protocol processing test: No action needed");
-        }
-        opentun::protocol::ProcessResult::Error(e) => {
+        Err(e) => {
             eprintln!("Protocol processing error: {}", e);
         }
     }
 
-    println!(
-        "Sans-IO architecture demonstrated. Core protocol layer working independently of I/O!"
-    );
+    println!("Sans-IO architecture demonstrated. Core protocol layer working independently of I/O!");
 
     Ok(())
 }

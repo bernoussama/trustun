@@ -4,8 +4,11 @@ use std::net::SocketAddr;
 pub mod cli;
 pub mod config;
 pub mod crypto;
+pub mod io;
 pub mod net;
 pub mod proto;
+pub mod protocol;
+pub mod runtime;
 pub mod tasks;
 
 // Constants
@@ -27,12 +30,8 @@ pub enum TunMessage {
     Shutdown,
 }
 
-pub type EncryptedPacket = (Vec<u8>, SocketAddr);
-#[derive(Debug, Clone)]
-pub enum UdpMessage {
-    EncryptedPacket,
-    Shutdown,
-}
+// Use the struct from protocol module instead of tuple
+pub use protocol::EncryptedPacket;
 
 // errors
 #[derive(thiserror::Error, Debug)]

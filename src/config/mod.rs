@@ -21,6 +21,7 @@ pub struct RuntimeConfig {
     pub shared_secrets: HashMap<IpAddr, [u8; 32]>,
     pub ciphers: HashMap<IpAddr, ChaCha20Poly1305>,
     pub ips: HashMap<SocketAddr, IpAddr>,
+    pub peers: HashMap<IpAddr, Peer>,
 }
 
 pub fn load_config(config_path: &str) -> Config {
