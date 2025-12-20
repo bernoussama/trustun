@@ -23,6 +23,23 @@ pub struct RuntimeConfig {
     pub ips: HashMap<SocketAddr, IpAddr>,
 }
 
+/// Load configuration from a YAML file or create and persist a default configuration when missing.
+///
+/// If a YAML file exists at `config_path` it is parsed into a `Config`. If the file is absent or unreadable,
+/// a default `Config` is generated (including a newly created keypair), written to `config_path` as YAML,
+/// and returned.
+///
+/// # Returns
+///
+/// `Config` loaded from the file or the generated default configuration written to `config_path`.
+///
+/// # Examples
+///
+/// ```
+/// let cfg = load_config("/tmp/example_vpn_config.yml");
+/// // On first run this will create the file and return the default config:
+/// assert_eq!(cfg.name, "utun0");
+/// ```
 pub fn load_config(config_path: &str) -> Config {
     match std::fs::read_to_string(config_path) {
         Ok(content) => serde_yaml::from_str(&content).unwrap(),
