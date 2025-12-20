@@ -14,7 +14,7 @@ x25519-dalek = { version = "2.0.1", features = [
 ] }
 base64 = "0.13.1"
 serde = { version = "1.0", features = ["derive"] }
-serde_yml = "0.0.12"
+serde_yaml = "0.9"
 chacha20poly1305 = "0.10.1"
 rand = "0.9.1"
 thiserror = "2.0.12"

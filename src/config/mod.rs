@@ -25,7 +25,7 @@ pub struct RuntimeConfig {
 
 pub fn load_config(config_path: &str) -> Config {
     match std::fs::read_to_string(config_path) {
-        Ok(content) => serde_yml::from_str(&content).unwrap(),
+        Ok(content) => serde_yaml::from_str(&content).unwrap(),
         Err(_) => {
             eprintln!("No config file found! using defaults.");
             let (private_key, public_key) = crate::crypto::generate_keypair();
@@ -40,7 +40,7 @@ pub fn load_config(config_path: &str) -> Config {
                 port: 1194,
                 peers,
             };
-            std::fs::write(config_path, serde_yml::to_string(&conf).unwrap())
+            std::fs::write(config_path, serde_yaml::to_string(&conf).unwrap())
                 .expect("Failed to write default config file");
             conf
         }
