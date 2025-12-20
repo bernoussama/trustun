@@ -57,14 +57,14 @@ peers:
         pub_key: "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB="
 "#;
 
-    let path = "test_config_temp.yaml";
+    let path = format!("test_config_temp_{}.yaml", std::process::id());
     std::fs::write(path, config_content).expect("Failed to write temp config");
 
     let result = std::panic::catch_unwind(|| {
-        opentun::config::load_config(path)
+        opentun::config::load_config(&path)
     });
 
-    let _ = std::fs::remove_file(path);
+    let _ = std::fs::remove_file(&path);
 
     let config = result.expect("load_config failed/panicked");
 
