@@ -15,6 +15,9 @@ fn generate_keypair() -> (StaticSecret, PublicKey) {
 }
 
 // Helper to extract IPv4 address from IpAddr
+// This helper is used in tests where we explicitly create IPv4 addresses
+// and need to extract the IPv4 variant. The IPv6 case is unreachable in
+// these test contexts.
 fn extract_ipv4(addr: IpAddr) -> Ipv4Addr {
     match addr {
         IpAddr::V4(ip) => ip,
