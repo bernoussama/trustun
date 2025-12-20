@@ -66,7 +66,7 @@ peers:
 "#;
 
     let path = format!("test_config_temp_{}.yaml", std::process::id());
-    std::fs::write(path, config_content).expect("Failed to write temp config");
+    std::fs::write(&path, config_content).expect("Failed to write temp config");
 
     let result = std::panic::catch_unwind(|| {
         opentun::config::load_config(&path)
@@ -111,7 +111,7 @@ async fn test_packet_flow() {
         port: 9000,
         secret: base64::encode(host_secret.to_bytes()),
         pubkey: base64::encode(host_public.as_bytes()),
-        peers: peers,
+        peers,
     });
 
     // 3. Setup RuntimeConfig
