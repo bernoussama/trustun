@@ -153,7 +153,7 @@ async fn test_packet_flow() {
     let (encrypted_packet, dest_addr) = erx.recv().await.expect("Should receive encrypted packet");
     assert_eq!(dest_addr, peer_socket);
     assert_ne!(encrypted_packet, packet); // Should be encrypted
-    assert!(encrypted_packet.len() > packet.len()); // Should have overhead (nonce + tag)
+    assert_eq!(encrypted_packet.len(), packet.len() + opentun::ENCRYPTION_OVERHEAD); // Should have exact overhead (nonce + tag)
 
     // Verify Decryption (simulate Peer receiving it)
     let peer_shared_secret = peer_secret.diffie_hellman(&host_public);
