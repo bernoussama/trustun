@@ -42,7 +42,7 @@ pub enum IpouError {
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
     #[error("YAML parsing error: {0}")]
-    SerdeYml(#[from] serde_yml::Error),
+    SerdeYaml(#[from] serde_yaml::Error),
     #[error("Base64 decoding error: {0}")]
     Base64(#[from] base64::DecodeError),
     #[error("Invalid key length: expected 32, got {0}")]
