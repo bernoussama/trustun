@@ -1,104 +1,78 @@
 use std::sync::Arc;
-
-use tokio::{
-    net::UdpSocket,
-    sync::mpsc::{Receiver, Sender},
-};
+use tokio::net::UdpSocket;
 use tun::AsyncDevice;
 
 use crate::config::{Config, RuntimeConfig};
+use crate::net::engine::{TunProcessor, UdpProcessor};
+use crate::proto::{TunInput, TunOutput, UdpInput, UdpOutput};
 
-// Spawned listeners
-pub async fn tun_listener(
-    dev: Arc<AsyncDevice>,
-    conf_clone: Arc<Config>,
-    runtime_conf: Arc<RuntimeConfig>,
-    etx: Sender<crate::EncryptedPacket>,
-) -> crate::Result<()> {
-    let mut tun_buf = [0u8; crate::MTU];
-
-    loop {
-        // Listen for TUN packets
-        let len = dev.recv(&mut tun_buf).await?;
-        // Spawn handler task for each packet
-        if len >= 20 {
-            tokio::spawn(crate::net::handle_tun_packet(
-                tun_buf,
-                len,
-                Arc::clone(&conf_clone),
-                Arc::clone(&runtime_conf),
-                etx.clone(),
-            ));
-        }
-        // Send raw packet + result channel to handler
-    }
-}
-
-pub async fn udp_listener(
-    sock: Arc<UdpSocket>,
-    runtime_conf: Arc<RuntimeConfig>,
-    dtx: Sender<crate::DecryptedPacket>,
-) -> crate::Result<()> {
-    let mut udp_buf = [0u8; crate::MTU + 512];
-    loop {
-        // Listen for UDP packets
-        let (len, peer_addr) = sock.recv_from(&mut udp_buf).await?;
-        // Spawn handler task for each packet
-        if len >= 28 {
-            // 12 bytes nonce + 16 bytes auth tag
-            tokio::spawn(crate::net::handle_udp_packet(
-                udp_buf,
-                len,
-                peer_addr,
-                Arc::clone(&runtime_conf),
-                dtx.clone(),
-            ));
-        };
-        // Send raw packet + result channel to handler
-    }
-}
-
-pub async fn result_coordinator(
+pub async fn tun_worker(
     dev: Arc<AsyncDevice>,
     sock: Arc<UdpSocket>,
-    mut erx: Receiver<crate::EncryptedPacket>,
-    mut drx: Receiver<crate::DecryptedPacket>,
+    conf: Arc<Config>,
+    runtime_conf: Arc<RuntimeConfig>,
 ) -> crate::Result<()> {
-    // This task coordinates sending decrypted packets to TUN and encrypted packets to UDP
-    // It runs indefinitely, processing packets as they arrive
-
-    #[cfg(debug_assertions)]
-    println!("Starting result coordinator...");
+    let mut buf = [0u8; crate::MTU];
+    let processor = TunProcessor::new(conf, runtime_conf);
 
     loop {
-        tokio::select! {
-                   // Receive decrypted packets from channel and send to TUN
-                   Some(decrypted_packet) = drx.recv() => {
-                       match dev.send(&decrypted_packet).await {
-                        Ok(sent) => {
-                            #[cfg(debug_assertions)]
-                            println!("Sent {sent} bytes to TUN dev");
-                        },
-                        Err(e) => {
-                        eprintln!("Error sending packet to TUN device: {e}");
-                        },
-                       }
-                   }
-
-                   // Receive enccrypted packets from channel and send to UDP
-                   Some((encrypted_packet, peer_addr)) = erx.recv() => {
+        match dev.recv(&mut buf).await {
+            Ok(len) => {
+                let input = TunInput::Packet(&buf[..len]);
+                match processor.process(input) {
+                    TunOutput::Encrypted { data, target } => {
                         #[cfg(debug_assertions)]
-                        println!("Sending encrypted packet to peer: {peer_addr}");
-                       match sock.send_to(&encrypted_packet, peer_addr).await {
-                           Ok(sent) => {
-                            #[cfg(debug_assertions)]
-                            println!("Sent {sent} bytes to {peer_addr}");
-                        },
-                           Err(e) => {
-                               eprintln!("Error sending encrypted packet to peer {peer_addr}: {e}");
-                        },
-                       }
-                   }
+                        println!("Sending encrypted packet to {}: {} bytes", target, data.len());
+                        if let Err(e) = sock.send_to(&data, target).await {
+                             eprintln!("Error sending encrypted packet to peer {target}: {e}");
+                        }
+                    }
+                    TunOutput::Drop(reason) => {
+                         #[cfg(debug_assertions)]
+                         eprintln!("Dropping TUN packet: {}", reason);
+                    }
+                }
+            }
+            Err(e) => {
+                eprintln!("Error reading from TUN: {}", e);
+            }
+        }
+    }
+}
+
+pub async fn udp_worker(
+    sock: Arc<UdpSocket>,
+    dev: Arc<AsyncDevice>,
+    runtime_conf: Arc<RuntimeConfig>,
+) -> crate::Result<()> {
+    let mut buf = [0u8; crate::MTU + 512];
+    let processor = UdpProcessor::new(runtime_conf);
+
+    loop {
+        match sock.recv_from(&mut buf).await {
+            Ok((len, peer_addr)) => {
+                let input = UdpInput::Packet(&buf[..len], peer_addr);
+                match processor.process(input) {
+                    UdpOutput::Decrypted(data) => {
+                         match dev.send(&data).await {
+                             Ok(sent) => {
+                                 #[cfg(debug_assertions)]
+                                 println!("Sent {sent} bytes to TUN dev");
+                             }
+                             Err(e) => {
+                                 eprintln!("Error sending packet to TUN device: {e}");
+                             }
+                         }
+                    }
+                    UdpOutput::Drop(reason) => {
+                         #[cfg(debug_assertions)]
+                         eprintln!("Dropping UDP packet: {}", reason);
+                    }
+                }
+            }
+            Err(e) => {
+                 eprintln!("Error reading from UDP: {}", e);
+            }
         }
     }
 }

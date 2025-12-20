@@ -1,38 +1,26 @@
 use std::net::SocketAddr;
 
-use serde::{Deserialize, Serialize};
-
-use crate::crypto::PublicKeyBytes;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Packet {
-    HandshakeInit {
-        sender_pubkey: PublicKeyBytes,
-        timestamp: u64,
-    },
-    HandshakeResponse {
-        success: bool,
-        message: String,
-    },
-    RequestPeer {
-        target_pubkey: PublicKeyBytes,
-    },
-    PeerInfo {
-        pubkey: PublicKeyBytes,
-        endpoint: Option<SocketAddr>,
-        last_seen: u64,
-    },
-    KeepAlive {
-        timestamp: u64,
-    },
-    VpnData(Vec<u8>),
+#[derive(Debug)]
+pub enum TunInput<'a> {
+    Packet(&'a [u8]),
 }
 
-/// Wire format for Packet
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WirePacket {
-    /// Quick discriminant
-    pub packet_type: u8,
-    /// encrypted Packet
-    pub payload: Vec<u8>,
+#[derive(Debug)]
+pub enum TunOutput {
+    Encrypted {
+        data: Vec<u8>,
+        target: SocketAddr,
+    },
+    Drop(String),
+}
+
+#[derive(Debug)]
+pub enum UdpInput<'a> {
+    Packet(&'a [u8], SocketAddr),
+}
+
+#[derive(Debug)]
+pub enum UdpOutput {
+    Decrypted(Vec<u8>),
+    Drop(String),
 }
