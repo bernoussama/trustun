@@ -118,7 +118,7 @@ peers:
     std::fs::write(&path, config_content).expect("Failed to write temp config");
 
     let result = std::panic::catch_unwind(|| {
-        opentun::config::load_config(path)
+        opentun::config::load_config(&path)
     });
 
     let _ = std::fs::remove_file(path);
