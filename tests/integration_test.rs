@@ -7,13 +7,59 @@ use tokio::sync::mpsc;
 use chacha20poly1305::{ChaCha20Poly1305, KeyInit, Nonce, aead::Aead};
 use x25519_dalek::{PublicKey, StaticSecret};
 
-// Helper to generate keypair
+/// Generates a new X25519 keypair for testing.
+///
+/// # Returns
+///
+/// A tuple containing:
+/// - `StaticSecret`: The private key
+/// - `PublicKey`: The corresponding public key
 fn generate_keypair() -> (StaticSecret, PublicKey) {
     let private = StaticSecret::random();
     let public = PublicKey::from(&private);
     (private, public)
 }
 
+/// Extracts an IPv4 address from an `IpAddr` enum.
+///
+/// This helper is used in tests where we explicitly create IPv4 addresses
+/// and need to extract the IPv4 variant. The IPv6 case is unreachable in
+/// these test contexts.
+///
+/// # Arguments
+///
+/// * `addr` - An `IpAddr` that is expected to contain an IPv4 address
+///
+/// # Returns
+///
+/// The extracted `Ipv4Addr`
+///
+/// # Panics
+///
+/// Panics with `unreachable!()` if the address is IPv6, as this should never
+/// occur in the test contexts where this function is used.
+fn extract_ipv4(addr: IpAddr) -> Ipv4Addr {
+    match addr {
+        IpAddr::V4(ip) => ip,
+        IpAddr::V6(_) => unreachable!("Test only uses IPv4 addresses"),
+    }
+}
+
+/// Creates a minimal IPv4 packet for testing purposes.
+///
+/// Constructs a basic IPv4 packet with a 20-byte header and the provided payload.
+/// The packet uses simplified values suitable for testing (e.g., zero checksum,
+/// UDP protocol).
+///
+/// # Arguments
+///
+/// * `src` - Source IPv4 address
+/// * `dst` - Destination IPv4 address
+/// * `payload` - Data to include in the packet body
+///
+/// # Returns
+///
+/// A `Vec<u8>` containing the complete IPv4 packet (header + payload)
 fn expect_ipv4(ip: IpAddr) -> Ipv4Addr {
     match ip {
         IpAddr::V4(ip) => ip,
@@ -50,6 +96,10 @@ fn create_ipv4_packet(src: Ipv4Addr, dst: Ipv4Addr, payload: &[u8]) -> Vec<u8> {
     packet
 }
 
+/// Tests that configuration files can be loaded correctly.
+///
+/// Creates a temporary YAML configuration file, loads it, and verifies that
+/// all fields (name, address, port, peers) are parsed correctly.
 #[test]
 fn test_config_loading() {
     let config_content = r#"
@@ -64,8 +114,8 @@ peers:
         pub_key: "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB="
 "#;
 
-    let path = "test_config_temp.yaml";
-    std::fs::write(path, config_content).expect("Failed to write temp config");
+    let path = format!("test_config_temp_{}.yaml", std::process::id());
+    std::fs::write(&path, config_content).expect("Failed to write temp config");
 
     let result = std::panic::catch_unwind(|| {
         opentun::config::load_config(path)
@@ -87,6 +137,13 @@ peers:
     assert_eq!(peer.sock_addr.to_string(), "192.168.1.6:5000");
 }
 
+/// Tests the complete packet flow including encryption and decryption.
+///
+/// This integration test validates:
+/// - Outbound flow: TUN packet → encryption → UDP packet
+/// - Inbound flow: UDP packet → decryption → TUN packet
+/// - Proper encryption/decryption using ChaCha20Poly1305 with X25519 key exchange
+/// - Correct packet routing between host and peer
 #[tokio::test]
 async fn test_packet_flow() {
     // 1. Setup Keys
@@ -110,7 +167,7 @@ async fn test_packet_flow() {
         port: 9000,
         secret: base64::encode(host_secret.to_bytes()),
         pubkey: base64::encode(host_public.as_bytes()),
-        peers: peers,
+        peers,
     });
 
     // 3. Setup RuntimeConfig
@@ -139,8 +196,8 @@ async fn test_packet_flow() {
     // --- Outbound Test: Host -> Peer ---
     let payload = b"Hello Peer!";
     let packet = create_ipv4_packet(
-        expect_ipv4(host_ip),
-        expect_ipv4(peer_ip),
+        extract_ipv4(host_ip),
+        extract_ipv4(peer_ip),
         payload
     );
 
@@ -175,8 +232,8 @@ async fn test_packet_flow() {
     // --- Inbound Test: Peer -> Host ---
     let inbound_payload = b"Hello Host!";
     let inbound_packet = create_ipv4_packet(
-        expect_ipv4(peer_ip),
-        expect_ipv4(host_ip),
+        extract_ipv4(peer_ip),
+        extract_ipv4(host_ip),
         inbound_payload
     );
 
@@ -207,6 +264,10 @@ async fn test_packet_flow() {
     assert_eq!(received_packet, inbound_packet);
 }
 
+/// Tests that packets destined for unknown peers are dropped.
+///
+/// Verifies that when a packet is sent to an IP address that is not in the
+/// peer configuration, it is properly dropped and nothing is transmitted.
 #[tokio::test]
 async fn test_unknown_peer() {
     let (_dtx, _) = mpsc::channel::<opentun::DecryptedPacket>(100);
@@ -255,6 +316,11 @@ async fn test_unknown_peer() {
     }
 }
 
+/// Tests that malformed or invalid packets are handled gracefully.
+///
+/// Verifies that when an invalid UDP packet is received (e.g., one that cannot
+/// be decrypted or is from an unknown peer), it is properly rejected without
+/// causing crashes or sending invalid data to the TUN interface.
 #[tokio::test]
 async fn test_malformed_packet() {
     let (dtx, mut drx) = mpsc::channel::<opentun::DecryptedPacket>(100);
