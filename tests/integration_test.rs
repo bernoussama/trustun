@@ -14,6 +14,14 @@ fn generate_keypair() -> (StaticSecret, PublicKey) {
     (private, public)
 }
 
+// Helper to extract IPv4 address from IpAddr
+fn extract_ipv4(addr: IpAddr) -> Ipv4Addr {
+    match addr {
+        IpAddr::V4(ip) => ip,
+        IpAddr::V6(_) => unreachable!("Test only uses IPv4 addresses"),
+    }
+}
+
 // Helper to create a dummy IPv4 packet
 fn create_ipv4_packet(src: Ipv4Addr, dst: Ipv4Addr, payload: &[u8]) -> Vec<u8> {
     let mut packet = Vec::new();
@@ -132,8 +140,8 @@ async fn test_packet_flow() {
     // --- Outbound Test: Host -> Peer ---
     let payload = b"Hello Peer!";
     let packet = create_ipv4_packet(
-        match host_ip { IpAddr::V4(ip) => ip, _ => panic!() },
-        match peer_ip { IpAddr::V4(ip) => ip, _ => panic!() },
+        extract_ipv4(host_ip),
+        extract_ipv4(peer_ip),
         payload
     );
 
@@ -169,8 +177,8 @@ async fn test_packet_flow() {
     // --- Inbound Test: Peer -> Host ---
     let inbound_payload = b"Hello Host!";
     let inbound_packet = create_ipv4_packet(
-        match peer_ip { IpAddr::V4(ip) => ip, _ => panic!() },
-        match host_ip { IpAddr::V4(ip) => ip, _ => panic!() },
+        extract_ipv4(peer_ip),
+        extract_ipv4(host_ip),
         inbound_payload
     );
 
