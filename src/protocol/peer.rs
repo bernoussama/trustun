@@ -5,6 +5,7 @@ use snow::{Builder, TransportState, HandshakeState};
 use rand::Rng;
 use std::net::SocketAddr;
 use std::time::{Instant, Duration};
+use bincode::Options;
 
 const NOISE_PARAMS: &str = "Noise_IK_25519_ChaChaPoly_BLAKE2s";
 const OVERHEAD: usize = 128; // Conservative overhead for Noise + Headers
@@ -134,7 +135,11 @@ impl Peer {
         // 2. Handle Input
         match input {
             Input::UdpPacket(data, addr) => {
-                let packet: WirePacket = bincode::deserialize(&data)?;
+                let packet: WirePacket = bincode::options()
+                    .with_limit(crate::MTU as u64)
+                    .with_little_endian()
+                    .with_fixint_encoding()
+                    .deserialize(&data)?;
 
                 match packet {
                     WirePacket::HandshakeInit(init) => {
