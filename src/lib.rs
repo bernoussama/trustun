@@ -9,8 +9,12 @@ pub mod protocol;
 pub mod tasks;
 
 // Constants
-pub const MTU: usize = 1420;
+/// Maximum size of IP packets on the TUN interface (IPv6 minimum path MTU)
 pub const TUN_MTU: usize = 1280;
+/// Overhead for Noise encryption + bincode serialization headers
+pub const OVERHEAD: usize = 128;
+/// Maximum size of encrypted UDP wire packets
+pub const WIRE_MTU: usize = TUN_MTU + OVERHEAD;
 pub const CHANNEL_BUFFER_SIZE: usize = 2048; // Buffered channels
 
 // types
