@@ -13,10 +13,14 @@ fn test_handshake_and_transport() {
     let alice_keys = builder.generate_keypair().unwrap();
     let bob_keys = builder.generate_keypair().unwrap();
 
-    let mut alice_static = [0u8; 32]; alice_static.copy_from_slice(&alice_keys.private);
-    let mut bob_static = [0u8; 32]; bob_static.copy_from_slice(&bob_keys.private);
-    let mut alice_pub = [0u8; 32]; alice_pub.copy_from_slice(&alice_keys.public);
-    let mut bob_pub = [0u8; 32]; bob_pub.copy_from_slice(&bob_keys.public);
+    let mut alice_static = [0u8; 32];
+    alice_static.copy_from_slice(&alice_keys.private);
+    let mut bob_static = [0u8; 32];
+    bob_static.copy_from_slice(&bob_keys.private);
+    let mut alice_pub = [0u8; 32];
+    alice_pub.copy_from_slice(&alice_keys.public);
+    let mut bob_pub = [0u8; 32];
+    bob_pub.copy_from_slice(&bob_keys.public);
 
     let alice_addr: SocketAddr = "127.0.0.1:10001".parse().unwrap();
     let bob_addr: SocketAddr = "127.0.0.1:10002".parse().unwrap();
