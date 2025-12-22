@@ -3,13 +3,12 @@ use std::net::SocketAddr;
 // modules
 pub mod cli;
 pub mod config;
-pub mod crypto;
 pub mod net;
-pub mod proto;
+pub mod protocol;
 pub mod tasks;
 
 // Constants
-pub const MTU: usize = 1420;
+pub const MTU: usize = 1280;
 pub const CHANNEL_BUFFER_SIZE: usize = MTU + 512; // Buffered channels
 pub const ENCRYPTION_OVERHEAD: usize = 28; // 12 nonce + 16 auth tag
 
@@ -23,7 +22,7 @@ pub struct Peer {
 pub type DecryptedPacket = Vec<u8>;
 #[derive(Debug, Clone)]
 pub enum TunMessage {
-    DecryptedPacket,
+    Packet(Vec<u8>),
     Shutdown,
 }
 
