@@ -1,106 +1,102 @@
-use chacha20poly1305::{ChaCha20Poly1305, KeyInit};
-use opentun::cli::commands::{handle_gen_key, handle_pub_key};
-use opentun::config::RuntimeConfig;
-use std::sync::Arc;
-use std::{collections::HashMap, net::Ipv4Addr};
-
-use clap::Parser;
 use opentun::Result;
-use opentun::tasks;
+use opentun::protocol::peer::{Peer, PeerConfig};
+use opentun::protocol::events::{Input, Output};
+use opentun::net::router::Router;
+use opentun::tasks::{udp, tun as tun_task};
+use std::sync::{Arc, Mutex};
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc;
-use x25519_dalek::{PublicKey, StaticSecret};
+use clap::Parser;
+use std::net::{Ipv4Addr, IpAddr};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = opentun::cli::Cli::parse();
-    // Subcommands
     match &cli.command {
-        Some(opentun::cli::Commands::Genkey {}) => handle_gen_key(),
-        Some(opentun::cli::Commands::Pubkey {}) => handle_pub_key(),
-        None => Ok(()),
+        Some(opentun::cli::Commands::Genkey {}) => {
+            let _ = opentun::cli::commands::handle_gen_key();
+            return Ok(());
+        },
+        Some(opentun::cli::Commands::Pubkey {}) => {
+            let _ = opentun::cli::commands::handle_pub_key();
+            return Ok(());
+        },
+        None => {},
     }
-    .expect("Failed to execute command");
 
-    // Load config file
     let config_path = "config.yaml";
     let conf = opentun::config::load_config(config_path);
-    let config = Arc::new(conf);
 
-    let config_clone = Arc::clone(&config);
-    // Initialize once after config load
-    let mut shared_secrets = HashMap::new();
-    let mut ciphers = HashMap::new();
+    let mut static_private = [0u8; 32];
+    base64::decode_config_slice(&conf.secret, base64::STANDARD, &mut static_private)?;
 
-    let mut secret_bytes = [0u8; 32];
-    base64::decode_config_slice(&config.secret, base64::STANDARD, &mut secret_bytes).unwrap();
-    let static_secret = StaticSecret::from(secret_bytes);
+    let router = Arc::new(Mutex::new(Router::new()));
+    let mut peers_to_start = Vec::new();
 
-    let mut ips = HashMap::new();
-    for (ip, peer) in &config.peers {
-        let mut pub_key_bytes = [0u8; 32];
-        base64::decode_config_slice(&peer.pub_key, base64::STANDARD, &mut pub_key_bytes).unwrap();
-        let pub_key = PublicKey::from(pub_key_bytes);
-        let shared_secret = static_secret.diffie_hellman(&pub_key);
-        let cipher = ChaCha20Poly1305::new(shared_secret.as_bytes().into());
-        shared_secrets.insert(*ip, *shared_secret.as_bytes());
-        ciphers.insert(*ip, cipher);
-        ips.insert(peer.sock_addr, *ip);
+    for (ip, peer_conf) in &conf.peers {
+        let mut remote_public = [0u8; 32];
+        base64::decode_config_slice(&peer_conf.pub_key, base64::STANDARD, &mut remote_public)?;
+        
+        let p_config = PeerConfig {
+             static_private,
+             remote_public,
+             psk: None,
+             remote_endpoint: peer_conf.sock_addr,
+             initiator: true,
+        };
+        
+        let peer = Peer::new(p_config)?;
+        let index = peer.local_index();
+        let peer_arc = Arc::new(Mutex::new(peer));
+        
+        if let IpAddr::V4(ipv4) = *ip {
+             router.lock().unwrap().add_peer(index, ipv4, peer_arc.clone());
+             peers_to_start.push(peer_arc);
+        } else {
+             eprintln!("Skipping non-IPv4 peer: {}", ip);
+        }
     }
 
-    let runtime_config = Arc::new(RuntimeConfig {
-        shared_secrets,
-        ciphers,
-        ips,
-    });
+    // Setup UDP
+    let sock = UdpSocket::bind(format!("0.0.0.0:{}", conf.port)).await?;
+    let sock_arc = Arc::new(sock);
+    println!("UDP socket bound to: {}", sock_arc.local_addr()?);
 
-    let runtime_config_clone = Arc::clone(&runtime_config);
-
+    // Setup TUN
     let mut tun_config = tun::Configuration::default();
     tun_config
-        .tun_name(&config_clone.name)
-        .address(config_clone.address.parse::<Ipv4Addr>().unwrap())
+        .tun_name(&conf.name)
+        .address(conf.address.parse::<Ipv4Addr>().unwrap())
         .netmask((255, 255, 255, 0))
-        .mtu(opentun::MTU as u16)
+        .mtu(1280) // 1280 Safe V1 default
         .up();
 
-    let dev = tun::create_as_async(&tun_config).expect("Failed to create TUN device");
-    let sock = UdpSocket::bind(format!("0.0.0.0:{}", Arc::clone(&config).port))
-        .await
-        .expect("Failed to bind UDP socket");
-    println!(
-        "UDP socket bound to: {}",
-        sock.local_addr().expect("Failed to get local address")
-    );
-    let dev_arc = Arc::new(dev);
-    let sock_arc = Arc::new(sock);
+    let dev = tun::create_as_async(&tun_config)?;
+    
+    // Channels
+    let (tun_tx, tun_rx) = mpsc::channel(opentun::CHANNEL_BUFFER_SIZE);
 
-    // Create channel for sending decrypted packets to TUN device
-    let (dtx, drx) = mpsc::channel::<opentun::DecryptedPacket>(opentun::CHANNEL_BUFFER_SIZE);
-    // Create channel for sending encrypted packets to UDP socket
-    let (etx, erx) = mpsc::channel::<opentun::EncryptedPacket>(opentun::CHANNEL_BUFFER_SIZE);
+    // Start Handshakes
+    for peer in peers_to_start {
+        let mut p = peer.lock().unwrap();
+        let outputs = p.tick(Input::Tick(std::time::Instant::now()))?;
+        for output in outputs {
+             match output {
+                 Output::SendUdp(data, dst) => {
+                     let _ = sock_arc.send_to(&data, dst).await;
+                 }
+                 _ => {}
+             }
+        }
+    }
 
-    let tun_listener = tokio::spawn(tasks::tun_listener(
-        Arc::clone(&dev_arc),
-        config_clone,
-        runtime_config,
-        etx,
-    ));
-    let udp_listener = tokio::spawn(tasks::udp_listener(
-        Arc::clone(&sock_arc),
-        runtime_config_clone,
-        dtx,
-    ));
-    let result_coordinator = tokio::spawn(tasks::result_coordinator(
-        Arc::clone(&dev_arc),
-        Arc::clone(&sock_arc),
-        erx,
-        drx,
-    ));
+    // Spawn Tasks
+    let udp_task = tokio::spawn(udp::run_udp(sock_arc.clone(), router.clone(), tun_tx));
+    let tun_task = tokio::spawn(tun_task::run_tun(dev, router.clone(), sock_arc.clone(), tun_rx));
 
-    tokio::try_join!(tun_listener, udp_listener, result_coordinator)
-        .map(|_| ())
-        .expect("Error joining tasks");
+    let (udp_res, tun_res) = tokio::try_join!(udp_task, tun_task)?;
+    udp_res?;
+    tun_res?;
 
     Ok(())
 }

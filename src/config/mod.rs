@@ -1,9 +1,7 @@
 use std::{
     collections::HashMap,
-    net::{IpAddr, SocketAddr},
+    net::IpAddr,
 };
-
-use chacha20poly1305::ChaCha20Poly1305;
 
 use crate::Peer;
 
@@ -15,12 +13,6 @@ pub struct Config {
     pub secret: String,
     pub pubkey: String,
     pub peers: HashMap<IpAddr, Peer>,
-}
-
-pub struct RuntimeConfig {
-    pub shared_secrets: HashMap<IpAddr, [u8; 32]>,
-    pub ciphers: HashMap<IpAddr, ChaCha20Poly1305>,
-    pub ips: HashMap<SocketAddr, IpAddr>,
 }
 
 pub fn load_config(config_path: &str) -> Config {

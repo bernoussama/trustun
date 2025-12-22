@@ -5,33 +5,17 @@ pub mod cli;
 pub mod config;
 pub mod crypto;
 pub mod net;
-pub mod proto;
+pub mod protocol;
 pub mod tasks;
 
 // Constants
-pub const MTU: usize = 1420;
-pub const CHANNEL_BUFFER_SIZE: usize = MTU + 512; // Buffered channels
-pub const ENCRYPTION_OVERHEAD: usize = 28; // 12 nonce + 16 auth tag
+pub const CHANNEL_BUFFER_SIZE: usize = 2048; // Buffered channels
 
 // types
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone)]
 pub struct Peer {
     pub sock_addr: SocketAddr,
     pub pub_key: String,
-}
-
-pub type DecryptedPacket = Vec<u8>;
-#[derive(Debug, Clone)]
-pub enum TunMessage {
-    DecryptedPacket,
-    Shutdown,
-}
-
-pub type EncryptedPacket = (Vec<u8>, SocketAddr);
-#[derive(Debug, Clone)]
-pub enum UdpMessage {
-    EncryptedPacket,
-    Shutdown,
 }
 
 // errors
@@ -49,6 +33,10 @@ pub enum IpouError {
     InvalidKeyLength(usize),
     #[error("TUN device creation failed: {0}")]
     TunDevice(#[from] tun::Error),
+    #[error("Protocol error: {0}")]
+    Protocol(#[from] protocol::errors::ProtocolError),
+    #[error("Task join error: {0}")]
+    Join(#[from] tokio::task::JoinError),
 }
 
 pub type Result<T> = std::result::Result<T, IpouError>;
