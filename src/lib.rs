@@ -10,6 +10,7 @@ pub mod tasks;
 
 // Constants
 pub const MTU: usize = 1420;
+pub const TUN_MTU: usize = 1280;
 pub const CHANNEL_BUFFER_SIZE: usize = 2048; // Buffered channels
 
 // types

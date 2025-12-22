@@ -112,4 +112,13 @@ fn test_handshake_and_transport() {
         },
         _ => panic!("Expected WriteTun"),
     };
+
+    // 11. Test PacketTooLarge
+    let large_data = vec![0u8; 1500]; // Definitely larger than 1280 - 128
+    let result = alice.tick(Input::TunPacket(large_data));
+    assert!(result.is_err());
+    match result {
+        Err(opentun::protocol::errors::ProtocolError::PacketTooLarge) => {},
+        _ => panic!("Expected PacketTooLarge error, got {:?}", result),
+    }
 }

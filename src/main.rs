@@ -68,7 +68,7 @@ async fn main() -> Result<()> {
         .tun_name(&conf.name)
         .address(conf.address.parse::<Ipv4Addr>().unwrap())
         .netmask((255, 255, 255, 0))
-        .mtu(1280) // 1280 Safe V1 default
+        .mtu(opentun::TUN_MTU as u16)
         .up();
 
     let dev = tun::create_as_async(&tun_config)?;

@@ -9,6 +9,7 @@ use bincode::Options;
 
 const NOISE_PARAMS: &str = "Noise_IK_25519_ChaChaPoly_BLAKE2s";
 const OVERHEAD: usize = 128; // Conservative overhead for Noise + Headers
+const MAX_PAYLOAD: usize = crate::TUN_MTU - OVERHEAD; // Match TUN MTU
 const KEEPALIVE_INTERVAL: Duration = Duration::from_secs(15);
 
 struct ReplayFilter {
@@ -239,7 +240,7 @@ impl Peer {
             }
             Input::TunPacket(data) => {
                  if let PeerState::Established(ref mut transport) = self.state {
-                     if data.len() > 1500 - OVERHEAD {
+                     if data.len() > MAX_PAYLOAD {
                          return Err(ProtocolError::PacketTooLarge);
                      }
                      let mut buf = [0u8; 65535];
