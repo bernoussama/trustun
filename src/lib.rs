@@ -6,6 +6,7 @@ pub mod config;
 pub mod crypto;
 pub mod net;
 pub mod proto;
+pub mod protocol;
 pub mod tasks;
 
 // Constants
