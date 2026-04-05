@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use serde::{Deserialize, Serialize};
 
-use crate::crypto::PublicKeyBytes;
+use crate::{crypto::PublicKeyBytes, sans_io::SansIo};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Packet {
@@ -27,6 +27,8 @@ pub enum Packet {
     },
     VpnData(Vec<u8>),
 }
+#[derive(Debug, PartialEq, Eq)]
+pub enum WireError {}
 
 /// Wire format for Packet
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -35,4 +37,16 @@ pub struct WirePacket {
     pub packet_type: u8,
     /// encrypted Packet
     pub payload: Vec<u8>,
+}
+
+impl SansIo for WirePacket {
+    type Error = WireError;
+
+    fn consume(&mut self, input: &[u8]) -> Result<(), Self::Error> {
+        todo!()
+    }
+
+    fn take_output(&mut self) -> Vec<u8> {
+        todo!()
+    }
 }

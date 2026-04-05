@@ -6,8 +6,8 @@ pub mod config;
 pub mod crypto;
 pub mod net;
 pub mod proto;
+pub mod relay;
 pub mod sans_io;
-pub mod tasks;
 
 // Constants
 pub const MTU: usize = 1420;

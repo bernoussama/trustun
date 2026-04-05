@@ -1,15 +1,15 @@
+/// A state machine that consumes bytes and accumulates emitted bytes internally.
 pub trait SansIo {
     type Error;
 
-    fn output_buffer(&mut self) -> &mut Vec<u8>;
-
+    /// Consumes input and appends any emitted bytes to pending output.
+    ///
+    /// Implementations must treat output as transactional: if this method returns
+    /// `Err`, `take_output()` must observe the same pending bytes it would have
+    /// seen before the failed call.
     fn consume(&mut self, input: &[u8]) -> Result<(), Self::Error>;
 
-    fn produce(&mut self, bytes: &[u8]) {
-        self.output_buffer().extend_from_slice(bytes);
-    }
-
-    fn take_output(&mut self) -> Vec<u8> {
-        std::mem::take(self.output_buffer())
-    }
+    /// Drains the bytes emitted by prior successful `consume()` calls.
+    #[must_use]
+    fn take_output(&mut self) -> Vec<u8>;
 }

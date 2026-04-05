@@ -27,3 +27,6 @@
 - Use `thiserror` for custom error types with `#[error]` attribute
 - Define project `Result<T>` type alias for `std::result::Result<T, IpouError>`
 - Use `?` operator for error propagation
+
+
+- sans-io migration plan @./sans-io-migration.md

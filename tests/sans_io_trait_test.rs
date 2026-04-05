@@ -10,16 +10,50 @@ struct UppercaseMachine {
 impl SansIo for UppercaseMachine {
     type Error = Infallible;
 
-    fn output_buffer(&mut self) -> &mut Vec<u8> {
-        &mut self.output
-    }
-
     fn consume(&mut self, input: &[u8]) -> Result<(), Self::Error> {
         for byte in input {
-            self.produce(&[byte.to_ascii_uppercase()]);
+            self.output.push(byte.to_ascii_uppercase());
         }
 
         Ok(())
+    }
+
+    fn take_output(&mut self) -> Vec<u8> {
+        std::mem::take(&mut self.output)
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum TestError {
+    InvalidByte,
+}
+
+#[derive(Default)]
+struct FallibleMachine {
+    output: Vec<u8>,
+}
+
+impl SansIo for FallibleMachine {
+    type Error = TestError;
+
+    fn consume(&mut self, input: &[u8]) -> Result<(), Self::Error> {
+        let mut staged = Vec::with_capacity(input.len());
+
+        for byte in input {
+            if *byte == b'!' {
+                return Err(TestError::InvalidByte);
+            }
+
+            staged.push(*byte);
+        }
+
+        self.output.extend_from_slice(&staged);
+
+        Ok(())
+    }
+
+    fn take_output(&mut self) -> Vec<u8> {
+        std::mem::take(&mut self.output)
     }
 }
 
@@ -41,4 +75,14 @@ fn take_output_extracts_and_clears_pending_bytes() {
 
     assert_eq!(machine.take_output(), b"ABC".to_vec());
     assert_eq!(machine.take_output(), Vec::<u8>::new());
+}
+
+#[test]
+fn consume_error_does_not_append_partial_output() {
+    let mut machine = FallibleMachine::default();
+
+    machine.consume(b"ok").unwrap();
+
+    assert_eq!(machine.consume(b"no!pe"), Err(TestError::InvalidByte));
+    assert_eq!(machine.take_output(), b"ok".to_vec());
 }
