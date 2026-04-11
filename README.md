@@ -10,6 +10,8 @@ Relay-first IP tunnel with a sans-IO Noise protocol core, direct UDP upgrade, an
 - Async Tokio tasks handle TUN, UDP, relay websocket traffic, coordination websocket traffic, and timer ticks.
 - Traffic starts on relay immediately, direct paths are probed in parallel, and the active path switches after authenticated direct traffic is observed.
 
+For a code-level description of cryptography, framing, relay/coord protocols, and path logic, see [docs/vpn-implementation.md](docs/vpn-implementation.md).
+
 ## Features
 
 - Sans-IO Noise IK transport core with replay protection
