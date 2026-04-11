@@ -3,11 +3,14 @@ use std::net::SocketAddr;
 // modules
 pub mod cli;
 pub mod config;
+pub mod control;
 pub mod crypto;
 pub mod net;
+pub mod protocol;
 pub mod proto;
 pub mod relay;
 pub mod sans_io;
+pub mod tasks;
 
 // Constants
 pub const MTU: usize = 1420;
@@ -46,10 +49,26 @@ pub enum IpouError {
     SerdeYaml(#[from] serde_yaml::Error),
     #[error("Base64 decoding error: {0}")]
     Base64(#[from] base64::DecodeError),
+    #[error("address parse error: {0}")]
+    AddrParse(#[from] std::net::AddrParseError),
     #[error("Invalid key length: expected 32, got {0}")]
     InvalidKeyLength(usize),
     #[error("TUN device creation failed: {0}")]
     TunDevice(#[from] tun::Error),
+    #[error("json error: {0}")]
+    Json(#[from] serde_json::Error),
+    #[error("websocket error: {0}")]
+    WebSocket(#[from] tokio_tungstenite::tungstenite::Error),
+    #[error("relay error: {0}")]
+    Relay(#[from] relay::RelayError),
+    #[error("protocol error: {0}")]
+    Protocol(#[from] protocol::ProtocolError),
+    #[error("task join error: {0}")]
+    Join(#[from] tokio::task::JoinError),
+    #[error("configuration error: {0}")]
+    Config(String),
+    #[error("channel closed: {0}")]
+    ChannelClosed(&'static str),
 }
 
 pub type Result<T> = std::result::Result<T, IpouError>;

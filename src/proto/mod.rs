@@ -42,7 +42,7 @@ pub struct WirePacket {
 impl SansIo for WirePacket {
     type Error = WireError;
 
-    fn consume(&mut self, input: &[u8]) -> Result<(), Self::Error> {
+    fn consume(&mut self, _input: &[u8]) -> Result<(), Self::Error> {
         todo!()
     }
 
