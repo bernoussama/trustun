@@ -1,0 +1,279 @@
+README.md
+  6e669dafc1e61d2c 13-14
+docs/vpn-implementation.md
+  6e669dafc1e61d2c 1-10,12,14-16,18-41,44,47-62,64-76,85-111,124-132
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "21ad2036aecf303a226ac211e42774cfdb5661f1",
+  "prompts": {
+    "6e669dafc1e61d2c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "34b73f74-2341-4cc4-a115-5806219eca05",
+        "model": "composer-2"
+      },
+      "human_author": "bernoussama",
+      "messages": [
+        {
+          "type": "user",
+          "text": "write documentation for this vpn implementation"
+        },
+        {
+          "type": "assistant",
+          "text": "Exploring the codebase to map the VPN implementation, then writing documentation.\n\n[REDACTED]"
+        },
+        {
+          "type": "tool_use",
+          "name": "SemanticSearch",
+          "input": {
+            "num_results": 25,
+            "query": "Where is VPN implemented and how does it work?",
+            "target_directories": [
+              "/home/oussama/projects/trustun"
+            ]
+          }
+        },
+        {
+          "type": "tool_use",
+          "name": "Glob",
+          "input": {
+            "glob_pattern": "**/*.{rs,toml,md}",
+            "target_directory": "/home/oussama/projects/trustun"
+          }
+        },
+        {
+          "type": "assistant",
+          "text": "[REDACTED]"
+        },
+        {
+          "type": "tool_use",
+          "name": "Read",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun/README.md"
+          }
+        },
+        {
+          "type": "tool_use",
+          "name": "Read",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun/src/lib.rs"
+          }
+        },
+        {
+          "type": "tool_use",
+          "name": "Read",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun/src/main.rs"
+          }
+        },
+        {
+          "type": "tool_use",
+          "name": "Read",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun/src/config/mod.rs"
+          }
+        },
+        {
+          "type": "tool_use",
+          "name": "Read",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun/src/net/router.rs"
+          }
+        },
+        {
+          "type": "assistant",
+          "text": "[REDACTED]"
+        },
+        {
+          "type": "tool_use",
+          "name": "Read",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun/src/tasks/mod.rs"
+          }
+        },
+        {
+          "type": "tool_use",
+          "name": "Read",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun/src/protocol/mod.rs"
+          }
+        },
+        {
+          "type": "tool_use",
+          "name": "Read",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun/src/protocol/peer.rs",
+            "limit": 200
+          }
+        },
+        {
+          "type": "tool_use",
+          "name": "Read",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun/src/relay/frame.rs"
+          }
+        },
+        {
+          "type": "tool_use",
+          "name": "Read",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun/src/control/coord.rs",
+            "limit": 120
+          }
+        },
+        {
+          "type": "assistant",
+          "text": "[REDACTED]"
+        },
+        {
+          "type": "tool_use",
+          "name": "Read",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun/src/protocol/path.rs",
+            "limit": 180
+          }
+        },
+        {
+          "type": "tool_use",
+          "name": "Read",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun/src/protocol/wire.rs",
+            "limit": 100
+          }
+        },
+        {
+          "type": "tool_use",
+          "name": "Read",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun/src/control/stun.rs",
+            "limit": 80
+          }
+        },
+        {
+          "type": "tool_use",
+          "name": "Read",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun/src/cli/commands.rs",
+            "limit": 80
+          }
+        },
+        {
+          "type": "tool_use",
+          "name": "Grep",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun",
+            "pattern": "handle_udp_packet|handle_tun_packet"
+          }
+        },
+        {
+          "type": "assistant",
+          "text": "[REDACTED]"
+        },
+        {
+          "type": "tool_use",
+          "name": "Grep",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun",
+            "pattern": "net::handle_|crate::net::"
+          }
+        },
+        {
+          "type": "tool_use",
+          "name": "Read",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun/src/protocol/peer.rs",
+            "limit": 200,
+            "offset": 200
+          }
+        },
+        {
+          "type": "tool_use",
+          "name": "Read",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun/src/tasks/relay.rs",
+            "limit": 100
+          }
+        },
+        {
+          "type": "assistant",
+          "text": "[REDACTED]"
+        },
+        {
+          "type": "tool_use",
+          "name": "Grep",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun",
+            "pattern": "crate::net::"
+          }
+        },
+        {
+          "type": "assistant",
+          "text": "[REDACTED]"
+        },
+        {
+          "type": "tool_use",
+          "name": "Read",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun/src/net/mod.rs"
+          }
+        },
+        {
+          "type": "assistant",
+          "text": "[REDACTED]"
+        },
+        {
+          "type": "tool_use",
+          "name": "Grep",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun",
+            "pattern": "handle_udp_packet|handle_tun_packet"
+          }
+        },
+        {
+          "type": "assistant",
+          "text": "[REDACTED]"
+        },
+        {
+          "type": "tool_use",
+          "name": "Read",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun/Cargo.toml",
+            "limit": 20
+          }
+        },
+        {
+          "type": "assistant",
+          "text": "Writing `docs/vpn-implementation.md` — architecture and implementation reference for developers.\n\n[REDACTED]"
+        },
+        {
+          "type": "tool_use",
+          "name": "Write",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun/docs/vpn-implementation.md"
+          }
+        },
+        {
+          "type": "assistant",
+          "text": "[REDACTED]"
+        },
+        {
+          "type": "tool_use",
+          "name": "StrReplace",
+          "input": {
+            "file_path": "/home/oussama/projects/trustun/README.md"
+          }
+        },
+        {
+          "type": "assistant",
+          "text": "Here’s what was added.\n\n### [`docs/vpn-implementation.md`](docs/vpn-implementation.md)\n\nDeveloper-focused reference that covers:\n\n- **Role of the system** — relay-first overlay, TUN, Noise, coord + STUN candidates  \n- **Processes** — peer vs relay vs coord and how they connect  \n- **Architecture** — `Router`, `Dispatcher`, Tokio tasks, and how they relate (including a mermaid diagram)  \n- **Crypto & framing** — Noise IK, initiator/responder rule, transport + replay, `WirePacket` layout  \n- **Path logic** — `PathManager`, candidate types, switching to direct, 30s direct timeout, keepalive/probe intervals (with the real constant names)  \n- **Relay** — `RelayFrame` types and binary layout  \n- **Coordination** — JSON `CoordMessage` flow  \n- **IPv4** — TUN routing assumption  \n- **Config** — which YAML fields matter for the tunnel  \n- **Source map** — table of important `src/` paths  \n- **Tests / related docs** — `e2e-vpn.sh`, `protocol-ideas.md`, `sans-io-migration.md`  \n- **Legacy** — notes that `src/net/mod.rs` still has unused ChaCha helpers; the live path is `Router` + `src/protocol/`\n\n### README\n\nOne sentence was added under **Overview** pointing to that doc so it’s easy to find.\n\nIf you want this split into a short **user guide** vs **protocol spec**, or OpenAPI-style coord/relay schemas, say how you’d like it organized.\n\n[REDACTED]"
+        }
+      ],
+      "total_additions": 126,
+      "total_deletions": 0,
+      "accepted_lines": 106,
+      "overriden_lines": 4
+    }
+  }
+}
