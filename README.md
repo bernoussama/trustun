@@ -237,7 +237,7 @@ sudo ip link set up dev utun0
 
 ## Development Status
 
-This project is in active development. See [PRD.md](PRD.md) for the roadmap.
+This project is experimental and in development.
 
 ### Current Limitations
 
@@ -253,4 +253,5 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Security Notice
 
-✅ **This software uses ChaCha20-Poly1305 encryption with Curve25519 key exchange for secure communication.** While cryptographically secure, ensure proper key management and consider additional security measures for production environments.
+✅ **This software uses ChaCha20-Poly1305 encryption with Curve25519 key exchange for secure communication.** While cryptographically secure, ensure proper key management.
+⚠️ **This software is an experiment and not meant to be used in production**.
